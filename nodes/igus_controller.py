@@ -17,14 +17,16 @@ from zed_3D_detection.msg import Box3d
 
 class IgusController():
     def __init__(self):
-        rospy.init_node("igus_move")
+        rospy.init_node("igus_controller")
         # Init corners subscribers
         rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
         # from world frame to robot frame
-        self.M = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self.T = np.array([[0.205], [-0.936], [-0.275]])
+        self.M = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, -1]])
+        self.T = np.array([[0.205], [-0.936], [0]])
         # distance between the peach upper face center and tools
         self.z_offset = 0.15
+        # system frequency
+        self.rate = rospy.Rate(10)
 
     def get_corners_data(self, data):
         corner_data = []
@@ -50,3 +52,11 @@ class IgusController():
             if target[0, 0] > -0.1:
                 return target
         return None
+    
+    def run(self):
+        while not rospy.is_shutdown():
+            self.rate.sleep()
+
+if __name__ == "__main__":
+    client = IgusController()
+    client.run()
