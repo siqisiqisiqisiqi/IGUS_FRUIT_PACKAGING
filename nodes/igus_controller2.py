@@ -8,11 +8,14 @@ parent = os.path.dirname(current)
 sys.path.insert(1, parent)
 
 import rospy
-import socket
 import numpy as np
+from numpy.linalg import norm
+
 
 from zed_3D_detection.msg import Box3d
-from src.igus_driver import IgusDriver
+from src.igus_driver2 import IgusDriver
+import src.sock_connection as sock_connection
+from igus_fruit_packaging.msg import RobotFeedback
 
 
 class IgusController():
@@ -20,6 +23,9 @@ class IgusController():
         rospy.init_node("igus_controller")
         # Init corners subscribers
         rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
+        # Init robot feedback subscribers
+        rospy.Subscriber("/actual_position", RobotFeedback,
+                         self.get_robot_data)
         # Init igus driver
         self.driver = IgusDriver(sock)
         # from world frame to robot frame
@@ -31,6 +37,10 @@ class IgusController():
         self.home = [0, 0, 300]
         # system frequency
         self.rate = rospy.Rate(10)
+
+    def get_robot_data(self, data):
+        self.actual_pos = [data.x, data.y, data.z]
+        self.din = data.digital_input
 
     def get_corners_data(self, data):
         corner_data = []
@@ -57,27 +67,24 @@ class IgusController():
                 return target
         return None
 
+    def check_arrival(self, desired_position):
+        while norm(np.array(self.actual_pos) - np.array(desired_position)) > 10:
+            rospy.sleep(0.05)
+
     def run(self):
         position = [0, 0, 100]
         while not rospy.is_shutdown():
             self.driver.cartesian_move(self.home)
+            self.check_arrival(self.home)
             self.driver.cartesian_move(position)
+            self.check_arrival(position)
             self.rate.sleep()
-
-        rospy.loginfo("0")
-        self.driver.shutdown()
         rospy.sleep(1)
         rospy.loginfo("shutdown successfully")
 
 
 if __name__ == "__main__":
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    server_address = ('192.168.3.11', 3920)
-    print("Connecting...")
-    sock.connect(server_address)
-    print("Connected")
-
-    client = IgusController(sock)
+    print("start the igus controller")
+    # sock_connection.init()
+    client = IgusController(sock_connection.sock)
     client.run()
