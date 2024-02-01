@@ -10,16 +10,15 @@ sys.path.insert(1, parent)
 import rospy
 import numpy as np
 from numpy.linalg import norm
-
+from std_msgs.msg import String
 
 from zed_3D_detection.msg import Box3d
-from src.igus_driver2 import IgusDriver
-import src.sock_connection as sock_connection
+from src.igus_driver2 import IgusDriverEncoder
 from igus_fruit_packaging.msg import RobotFeedback
 
 
 class IgusController():
-    def __init__(self, sock):
+    def __init__(self):
         rospy.init_node("igus_controller")
         # Init corners subscribers
         rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
@@ -27,7 +26,9 @@ class IgusController():
         rospy.Subscriber("/actual_position", RobotFeedback,
                          self.get_robot_data)
         # Init igus driver
-        self.driver = IgusDriver(sock)
+        self.encoder = IgusDriverEncoder()
+        #
+        self.robot_pub = rospy.Publisher("igus_message", String, queue_size=10)
         # from world frame to robot frame
         self.M = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, -1]])
         self.T = np.array([[-0.05753], [0.04226], [0.04]])
@@ -37,10 +38,17 @@ class IgusController():
         self.home = [0, 0, 300]
         # system frequency
         self.rate = rospy.Rate(10)
+        # gripper trigger to identify if it is successfully picking up the peach
+        self.gripper_flag = False
 
     def get_robot_data(self, data):
         self.actual_pos = [data.x, data.y, data.z]
-        self.din = data.digital_input
+        din = data.digital_input
+        if din[0] == 22:
+            self.gripper_flag = True
+        else:
+            self.gripper_flag = False
+        rospy.loginfo(f"the gripper flag value is {self.gripper_flag}.")
 
     def get_corners_data(self, data):
         corner_data = []
@@ -67,24 +75,45 @@ class IgusController():
                 return target
         return None
 
-    def check_arrival(self, desired_position):
-        while norm(np.array(self.actual_pos) - np.array(desired_position)) > 10:
+    def robot_move(self, desired_position):
+        move_message = self.encoder.cartesian_move(desired_position)
+        # In case losing the message
+        for i in range(2):
+            self.robot_pub.publish(move_message)
+            rospy.sleep(0.1)
+        rospy.loginfo("successfully publish the data")
+        rospy.sleep(0.2)
+        while norm(np.array(self.actual_pos) - np.array(desired_position)) > 5:
             rospy.sleep(0.05)
+        rospy.loginfo("successfully go to the desired position.")
+
+    def gripper_open(self):
+        message = self.encoder.gripper(0, 0)
+        self.robot_pub.publish(message)
+        # rospy.sleep(0.1)
+        # self.move_pub.publish(message)
+
+    def gripper_close(self):
+        message = self.encoder.gripper(1, 0)
+        self.robot_pub.publish(message)
+        # rospy.sleep(0.1)
+        # self.move_pub.publish(message)
 
     def run(self):
-        position = [0, 0, 100]
+        position = [0, 0, 150]
         while not rospy.is_shutdown():
-            self.driver.cartesian_move(self.home)
-            self.check_arrival(self.home)
-            self.driver.cartesian_move(position)
-            self.check_arrival(position)
-            self.rate.sleep()
+            self.robot_move(self.home)
+            self.gripper_open()
+            self.robot_move(position)
+            self.gripper_close()
+            rospy.sleep(0.1)
+            while self.gripper_flag == False:
+                continue
         rospy.sleep(1)
         rospy.loginfo("shutdown successfully")
 
 
 if __name__ == "__main__":
     print("start the igus controller")
-    # sock_connection.init()
-    client = IgusController(sock_connection.sock)
+    client = IgusController()
     client.run()
