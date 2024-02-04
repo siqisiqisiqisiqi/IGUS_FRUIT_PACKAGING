@@ -47,9 +47,9 @@ class AliveDecode(Thread):
                 b = result2[0].split()
                 self.cartesian_position = [float(ele) for ele in b[1:]]
                 # print(f"self.din is {self.din}.")
-                print(f"self.cartesian position is {self.cartesian_position}.")
+                # print(f"self.cartesian position is {self.cartesian_position}.")
             except:
-                print(f"error data from server is {data}.")
+                # print(f"error data from server is {data}.")
                 pass
 
             if self.event.is_set():
@@ -67,16 +67,17 @@ try:
     # This is my intended message (I use CMD DOUT since this creates a log entry on success)
 
     # Digital Output
-    # message = "CRISTART 1234 CMD DOUT 22 true CRIEND"
+    # message1 = "CRISTART 1234 CMD DOUT 22 false CRIEND"
+    # message2 = "CRISTART 1234 CMD DOUT 21 true CRIEND"
     # message1 = "CRISTART 1234 CMD DOUT 1 true CRIEND"
 
     # Cartesian Movement
-    # message = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 1000 CRIEND"
-    message = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 100 CRIEND"
+    message1 = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 1000 CRIEND"
+    # message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
 
 # Encode the messages
     encodedAliveJog = messageAliveJog.encode('utf-8')
-    encoded = message.encode('utf-8')
+    encoded = message1.encode('utf-8')
     arrayAliveJog = bytearray(encodedAliveJog)
     array = bytearray(encoded)
 
@@ -88,15 +89,18 @@ try:
 
 # Send the main message
     print("Sending message")
-    sock.sendall(array)
+    # sock.sendall(array)
 
+    # encoded = message2.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
 
 # I'm sending 10 more ALIVEJOG messages to keep the connection alive.
 # If I drop the connection too early our message may not get through.
 # A production program should send this once or twice a second from a parallel thread.
     print("Keeping connection alive")
     alive_client.start()
-    for i in range(1, 20):
+    for i in range(1, 10):
         # print("Sending ALIVEJOG")
         # sock.sendall(arrayAliveJog)
         # data = sock.recv(1024).decode()

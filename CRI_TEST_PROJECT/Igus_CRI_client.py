@@ -62,7 +62,7 @@ def cartesian_move_array(position):
     x = position[0]
     y = position[1]
     z = position[2]
-    message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 100 CRIEND"
+    message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 200 CRIEND"
     encoded = message.encode('utf-8')
     move_array = bytearray(encoded)
     return move_array
@@ -104,7 +104,7 @@ def main():
 
     array = cartesian_move_array(home)
     sock.sendall(array)
-
+ 
     time.sleep(2)
     print("Start the project!")
 
@@ -116,7 +116,7 @@ def main():
 
     j = 0
     t = time.time()
-    for i in range(1, 6):
+    for i in range(1, 5):
 
         array = cartesian_move_array(position[j])
         sock.sendall(array)
@@ -124,10 +124,11 @@ def main():
         time.sleep(0.2)
         actual_pos = alive_client.cartesian_position
 
-        while norm(np.array(actual_pos) - np.array(position[j])) > 10:
-            actual_pos = alive_client.cartesian_position
-            print(f"actual position is {actual_pos}")
-            time.sleep(0.01)
+        # while norm(np.array(actual_pos) - np.array(position[j])) > 10:
+        #     actual_pos = alive_client.cartesian_position
+        #     # print(f"actual position is {actual_pos}")
+        #     time.sleep(0.01)
+        time.sleep(2)
 
         j = j + 1
         if j >= len(position):
