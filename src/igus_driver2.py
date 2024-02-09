@@ -3,9 +3,9 @@ import numpy as np
 
 class IgusDriverEncoder():
     def cartesian_move(self, position):
-        x = position[0]
-        y = position[1]
-        z = position[2]
+        x = int(position[0])
+        y = int(position[1])
+        z = int(position[2])
         # constranit the work range
         if z < 50:
             z = 50
@@ -19,7 +19,7 @@ class IgusDriverEncoder():
         if abs(y) > 200:
             y = np.sign(y) * 200
             print("y exceed the range!!!")
-        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 100 CRIEND"
+        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 200 CRIEND"
         encoded = message.encode('utf-8')
         move_array = bytearray(encoded)
         return message

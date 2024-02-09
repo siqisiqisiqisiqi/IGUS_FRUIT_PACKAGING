@@ -6,11 +6,4 @@
     <node pkg="igus_fruit_packaging" type="igus_controller2.py" name="igus_controller" output="screen" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@'">
     </node>
 
-    <!-- <node pkg="igus_fruit_packaging" type="igus_controller.py" name="igus_controller" output="screen">
-    </node> -->
-
-    <!-- <node pkg="igus_fruit_packaging" type="test.py" name="talker" output="screen">
-    </node> -->
-
-
 </launch>

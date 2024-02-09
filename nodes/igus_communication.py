@@ -35,18 +35,63 @@ class IgusCommunication():
         # digital input
         self.din = []
         # alive message frequency
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(50)
+
+    def start_machine(self):
+        messageConnect = "CRISTART 1234 CMD Connect CRIEND"
+        messageReset = "CRISTART 1234 CMD Reset CRIEND"
+        messageEnable = "CRISTART 1234 CMD Enable CRIEND"
+        encodedConnect = messageConnect.encode('utf-8')
+        encodedReset = messageReset.encode('utf-8')
+        encodedEnable = messageEnable.encode('utf-8')
+        array = bytearray(encodedConnect)
+        self.sock.sendall(array)
+        rospy.sleep(1)
+        # array = bytearray(encodedReset)
+        # self.sock.sendall(array)
+        # rospy.sleep(1)
+        array = bytearray(encodedEnable)
+        self.sock.sendall(array)
+        rospy.sleep(1)
+        rospy.loginfo("start the machine")
+
+    def close_machine(self):
+        messageDisconnect = "CRISTART 1234 CMD Disconnect CRIEND"
+        messageDisable = "CRISTART 1234 CMD Disable CRIEND"
+
+        encodedDisconnect = messageDisconnect.encode('utf-8')
+        encodedDisable = messageDisable.encode('utf-8')
+        array = bytearray(encodedDisconnect)
+        self.sock.sendall(array)
+        rospy.sleep(1)
+        array = bytearray(encodedDisable)
+        self.sock.sendall(array)
+        rospy.sleep(1)
+        rospy.loginfo("close the machine")
+
+    def reference_machine(self):
+        messageReference = "CRISTART 1234 CMD ReferenceAllJoints CRIEND"
+        encodedReference = messageReference.encode('utf-8')
+        array = bytearray(encodedReference)
+        self.sock.sendall(array)
+        rospy.loginfo("start reference the robot.")
+        rospy.sleep(30)
+        rospy.loginfo("finish the robot referencing.")
 
     def message_callback(self, data):
-        # rospy.loginfo(f"receive the data is {data.data}")
+        rospy.loginfo(f"receive the data is {data.data}")
         move_message = data.data
         encoded = move_message.encode('utf-8')
         move_array = bytearray(encoded)
         self.sock.sendall(move_array)
 
     def run(self):
+        i_f = 0
         while not rospy.is_shutdown():
-            self.sock.sendall(self.arrayAliveJog)
+            i_f = i_f + 1
+            if i_f > 10:
+                self.sock.sendall(self.arrayAliveJog)
+                i_f = 0
             data = self.sock.recv(1024).decode()
             bot_status = RobotFeedback()
             try:
@@ -82,7 +127,8 @@ if __name__ == "__main__":
     print("Connected")
 
     client = IgusCommunication(sock)
-
+    client.start_machine()
     client.run()
+    client.close_machine()
     sock.close()
     rospy.loginfo("Complete the task!")

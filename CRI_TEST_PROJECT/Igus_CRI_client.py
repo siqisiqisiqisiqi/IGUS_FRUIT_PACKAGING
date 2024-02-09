@@ -9,6 +9,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Enter the IP address of the robot (192.168.3.11) here if you're not using a CPRog/iRC simulation
+# server_address = ('localhost', 3920)
 server_address = ('192.168.3.11', 3920)
 print("Connecting...")
 sock.connect(server_address)
@@ -32,10 +33,13 @@ class AliveDecode(Thread):
 
     def run(self):
         global sock
+        i_f = 0
         while True:
-            sock.sendall(self.arrayAliveJog)
+            i_f = i_f + 1
+            if i_f > 10:
+                sock.sendall(self.arrayAliveJog)
+                i_f = 0
             data = sock.recv(1024).decode()
-
             try:
                 result1 = re.findall(r'DIN \d+', data, re.DOTALL)
                 a = result1[0].split()
@@ -55,7 +59,8 @@ class AliveDecode(Thread):
             # shutdown the thread
             if self.event.is_set():
                 break
-            time.sleep(0.05)
+            # TODO search the website to figure out the synchronization between client and server
+            time.sleep(0.02)
 
 
 def cartesian_move_array(position):
@@ -86,25 +91,72 @@ def gripper(sock, D22=1, D23=1):
     sock.sendall(Dout_array)
 
 
+def start_machine():
+    messageConnect = "CRISTART 1234 CMD Connect CRIEND"
+    messageReset = "CRISTART 1234 CMD Reset CRIEND"
+    messageEnable = "CRISTART 1234 CMD Enable CRIEND"
+    encodedConnect = messageConnect.encode('utf-8')
+    encodedReset = messageReset.encode('utf-8')
+    encodedEnable = messageEnable.encode('utf-8')
+    array = bytearray(encodedConnect)
+    sock.sendall(array)
+    time.sleep(1)
+    # array = bytearray(encodedReset)
+    # sock.sendall(array)
+    # time.sleep(1)
+    array = bytearray(encodedEnable)
+    sock.sendall(array)
+    time.sleep(1)
+    print("start the machine")
+
+
+def reference_machine():
+    messageReference = "CRISTART 1234 CMD ReferenceAllJoints CRIEND"
+    encodedReference = messageReference.encode('utf-8')
+    array = bytearray(encodedReference)
+    sock.sendall(array)
+    print("start reference the robot.")
+    time.sleep(30)
+    print("finish the robot referencing.")
+
+
+def close_machine():
+    messageDisconnect = "CRISTART 1234 CMD Disconnect CRIEND"
+    messageDisable = "CRISTART 1234 CMD Disable CRIEND"
+
+    encodedDisconnect = messageDisconnect.encode('utf-8')
+    encodedDisable = messageDisable.encode('utf-8')
+    array = bytearray(encodedDisconnect)
+    sock.sendall(array)
+    time.sleep(1)
+    array = bytearray(encodedDisable)
+    sock.sendall(array)
+    time.sleep(1)
+    print("close the machine")
+
+
 def main():
+    start_machine()
     stop_event = Event()
     alive_client = AliveDecode(stop_event)
 
+    home = [0, 0, 300]
     position = []
     position1 = [0, 0, 300]
     position2 = [0, 0, 100]
-    position3 = [100, 0, 100]
-    home = [0, 0, 300]
+    position3 = [0, 150, 150]
+    position4 = [0, 0, 300]
     position.append(position1)
     position.append(position2)
     position.append(position3)
+    position.append(position4)
 
     alive_client.start()
     gripper(sock, 1, 1)
 
     array = cartesian_move_array(home)
     sock.sendall(array)
- 
+
     time.sleep(2)
     print("Start the project!")
 
@@ -114,31 +166,26 @@ def main():
         actual_pos = alive_client.cartesian_position
         print(f"actual_pos is {actual_pos}")
 
-    j = 0
     t = time.time()
-    for i in range(1, 5):
+    for i in range(len(position)):
 
-        array = cartesian_move_array(position[j])
+        array = cartesian_move_array(position[i])
         sock.sendall(array)
 
         time.sleep(0.2)
         actual_pos = alive_client.cartesian_position
 
-        # while norm(np.array(actual_pos) - np.array(position[j])) > 10:
-        #     actual_pos = alive_client.cartesian_position
-        #     # print(f"actual position is {actual_pos}")
-        #     time.sleep(0.01)
-        time.sleep(2)
-
-        j = j + 1
-        if j >= len(position):
-            j = 0
+        while norm(np.array(actual_pos) - np.array(position[i])) > 5:
+            actual_pos = alive_client.cartesian_position
+            print(f"actual position is {actual_pos}")
+            time.sleep(0.01)
 
     print(f"elapsed time is {time.time()-t}.")
     print("Finally")
 
     stop_event.set()
     alive_client.join()
+    close_machine()
     sock.close()
     time.sleep(0.5)
     exit()
