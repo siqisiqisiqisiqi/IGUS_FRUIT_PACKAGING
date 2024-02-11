@@ -56,6 +56,16 @@ class IgusCommunication():
         rospy.loginfo("start the machine")
 
     def close_machine(self):
+        Dout22 = "CRISTART 1234 CMD DOUT 22 false CRIEND"
+        Dout21 = "CRISTART 1234 CMD DOUT 21 false CRIEND"
+        Dout22 = Dout22.encode('utf-8')
+        array = bytearray(Dout22)
+        self.sock.sendall(array)
+
+        Dout21 = Dout21.encode('utf-8')
+        array = bytearray(Dout21)
+        self.sock.sendall(array)
+
         messageDisconnect = "CRISTART 1234 CMD Disconnect CRIEND"
         messageDisable = "CRISTART 1234 CMD Disable CRIEND"
 

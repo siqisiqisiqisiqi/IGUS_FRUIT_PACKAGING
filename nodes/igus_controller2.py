@@ -45,7 +45,7 @@ class IgusController():
         # init the corner data
         self.corner_data = None
         # load the box info
-        self.box_type = "box1"
+        self.box_type = "box2"
         path_file = f"{self.box_type}.yaml"
         with open(f"{parent}/config/{path_file}", "r") as f:
             box_info = yaml.safe_load(f)
@@ -105,18 +105,30 @@ class IgusController():
         rospy.loginfo("successfully go to the desired position.")
 
     def gripper_open(self):
-        message = self.encoder.gripper(0, 0)
-        self.robot_pub.publish(message)
-        # rospy.sleep(0.1)
-        # self.move_pub.publish(message)
+        message1, message2 = self.encoder.gripper(0, 0)
+        # self.robot_pub.publish(message1)
+        # rospy.loginfo(0.1)
+        self.robot_pub.publish(message2)
+
+    def gripper_open1(self):
+        message1, message2 = self.encoder.gripper(0, 1)
+        self.robot_pub.publish(message1)
+        # rospy.loginfo(0.1)
+        # self.robot_pub.publish(message2)
+
+    def gripper_half_open(self):
+        message1, message2 = self.encoder.gripper(1, 1)
+        # self.robot_pub.publish(message1)
+        # rospy.loginfo(0.1)
+        self.robot_pub.publish(message2)
 
     def gripper_close(self):
-        message = self.encoder.gripper(1, 0)
-        self.robot_pub.publish(message)
+        message1, message2 = self.encoder.gripper(1, 0)
+        self.robot_pub.publish(message1)
+        # rospy.sleep(0.1)
+        # self.robot_pub.publish(message2)
         while self.gripper_flag == False:
             continue
-        # rospy.sleep(0.1)
-        # self.move_pub.publish(message)
 
     def run(self):
         position = np.array([0, 0, 300])
@@ -135,20 +147,22 @@ class IgusController():
                     target_offset = np.array(
                         [target[0], target[1], target[2] + 50])
                     self.robot_move(target_offset)
+                    self.gripper_open()
                     # move down to the peach
                     self.robot_move(target)
                     # close the gripper to pickup the peach
                     self.gripper_close()
                     # move the robot over the container
                     p = self.position[idx]
-                    container_position = np.array([p[0], p[1], p[2] + 50])
+                    container_position = np.array([p[0], p[1], p[2] + 70])
                     self.robot_move(container_position)
                     # move the robot to the container
                     self.robot_move(self.position[idx])
                     # open the gripper to put the peach
-                    self.gripper_open()
+                    self.gripper_half_open()
                     # move the robot to the home
                     self.robot_move(self.home)
+                    self.gripper_open1()
                     idx = idx + 1
 
             if idx == self.capacity:

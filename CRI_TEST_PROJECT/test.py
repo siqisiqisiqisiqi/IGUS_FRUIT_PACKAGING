@@ -93,6 +93,17 @@ def reference_machine():
 
 
 def close_machine():
+
+    Dout22 = "CRISTART 1234 CMD DOUT 22 false CRIEND"
+    Dout21 = "CRISTART 1234 CMD DOUT 21 false CRIEND"
+    Dout22 = Dout22.encode('utf-8')
+    array = bytearray(Dout22)
+    sock.sendall(array)
+    time.sleep(0.5)
+    Dout21 = Dout21.encode('utf-8')
+    array = bytearray(Dout21)
+    sock.sendall(array)
+
     messageDisconnect = "CRISTART 1234 CMD Disconnect CRIEND"
     messageDisable = "CRISTART 1234 CMD Disable CRIEND"
 
@@ -114,21 +125,41 @@ try:
     messageAliveJog = "CRISTART 1234 ALIVEJOG 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 CRIEND"
     # This is my intended message (I use CMD DOUT since this creates a log entry on success)
 
-    # Digital Output
-    # message = "CRISTART 1234 CMD DOUT 22 true CRIEND"
-    # message1 = "CRISTART 1234 CMD DOUT 1 true CRIEND"
-
     # Cartesian Movement
-    # message = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 1000 CRIEND"
-    message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
+    message = "CRISTART 1234 CMD Move Cart 0 0 200 0 0 0 0 0 0 100 CRIEND"
+    # message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
 
     # Joint Movement
     # message = "CRISTART 1234 CMD Move Joint 0 0 100 0 0 0 0 0 0 20 CRIEND"
 
-# Encode the messages
+    # message = "CRISTART 1234 CMD DOUT 21 true CRIEND"
+    # message1 = "CRISTART 1234 CMD DOUT 22 true CRIEND"
+
+    # # # Encode the messages
     encoded = message.encode('utf-8')
     array = bytearray(encoded)
     sock.sendall(array)
+    # time.sleep(0.1)
+
+    # encoded = message1.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
+
+    # time.sleep(5)
+
+    # # Digital Output
+    # message = "CRISTART 1234 CMD DOUT 21 false CRIEND"
+    # message1 = "CRISTART 1234 CMD DOUT 22 false CRIEND"
+
+    # # # Encode the messages
+    # encoded = message.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
+    # time.sleep(0.1)
+
+    # encoded = message1.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
 
 # Send first ALIVEJOG to establish the connection
     # print("Sending ALIVEJOG")
@@ -145,6 +176,20 @@ try:
     print("Keeping connection alive")
     alive_client.start()
 
+    # time.sleep(5)
+    # # Digital Output
+    # message = "CRISTART 1234 CMD DOUT 20 false CRIEND"
+    # message1 = "CRISTART 1234 CMD DOUT 21 false CRIEND"
+
+    # # Encode the messages
+    # encoded = message.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
+
+    # encoded = message1.encode('utf-8')
+    # array = bytearray(encoded)
+    # sock.sendall(array)
+
     for i in range(1, 20):
         # print("Sending ALIVEJOG")
         # sock.sendall(arrayAliveJog)
@@ -155,7 +200,7 @@ try:
 
         # print(f'the position of the robot is {alive_client.cartesian_position}')
         # print(f"the high input port is {alive_client.din}")
-        time.sleep(0.5)
+        time.sleep(0.3)
 
 finally:
     print("Finally")
