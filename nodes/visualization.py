@@ -34,7 +34,7 @@ class visualization:
         rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
 
         # Robot status
-        # rospy.Subscriber("/robot_status", Int16, self.get_robot_status)
+        rospy.Subscriber("/system_status", String, self.get_system_status)
 
         # Publish the type of the box
         self.pub = rospy.Publisher('box_type', String, queue_size=10)
@@ -59,6 +59,10 @@ class visualization:
         self.rate = rospy.Rate(10)
 
         self.img = None
+        self.status = "Wait"
+
+    def get_system_status(self, data):
+        self.status = data.data
 
     def get_image(self, data):
         try:
@@ -83,46 +87,54 @@ class visualization:
 
     def visualization(self):
         img = self.cv_image
-        for index in range(self.num):
-            corner_world = self.corner_data[index]
-            corner_camera = self.Mat @ (corner_world.T) + self.tvecs
-            corner_image = (self.mtx @ corner_camera).T
-            corner = corner_image[:, :2] / corner_image[:, 2:3]
-            corner = corner.astype(int)
+        for index in range(self.corner_data.shape[0]):
+            try:
+                corner_world = self.corner_data[index]
 
-            corner1 = corner[:4, :]
-            corner2 = corner[4:8, :]
-            pt1 = corner1.reshape((-1, 1, 2))
-            pt2 = corner2.reshape((-1, 1, 2))
+                corner_camera = self.Mat @ (corner_world.T) + self.tvecs
+                corner_image = (self.mtx @ corner_camera).T
+                corner = corner_image[:, :2] / corner_image[:, 2:3]
+                corner = corner.astype(int)
 
-            color = self.colors[index]
-            thickness = 2
-            cv2.polylines(img, [pt1], True, color, thickness)
-            cv2.polylines(img, [pt2], True, color, thickness)
-            for i, j in zip(range(4), range(4, 8)):
-                cv2.line(img, tuple(corner[i]), tuple(
-                    corner[j]), color, thickness)
+                corner1 = corner[:4, :]
+                corner2 = corner[4:8, :]
+                pt1 = corner1.reshape((-1, 1, 2))
+                pt2 = corner2.reshape((-1, 1, 2))
 
-            # # option 2 drawing
-            index1 = [1, 0, 4, 5]
-            index2 = [0, 3, 7, 4]
-            index3 = [2, 3, 7, 6]
-            index4 = [1, 2, 6, 5]
-            zero1 = np.zeros((img.shape), dtype=np.uint8)
-            zero2 = np.zeros((img.shape), dtype=np.uint8)
-            zero3 = np.zeros((img.shape), dtype=np.uint8)
-            zero4 = np.zeros((img.shape), dtype=np.uint8)
-            zero_mask1 = cv2.fillConvexPoly(zero1, corner[index1, :], color)
-            zero_mask2 = cv2.fillConvexPoly(zero2, corner[index2, :], color)
-            zero_mask3 = cv2.fillConvexPoly(zero3, corner[index3, :], color)
-            zero_mask4 = cv2.fillConvexPoly(zero4, corner[index4, :], color)
-            zeros_mask = np.array(
-                (zero_mask1 + zero_mask2 + zero_mask3 + zero_mask4))
+                color = self.colors[index]
+                thickness = 2
+                cv2.polylines(img, [pt1], True, color, thickness)
+                cv2.polylines(img, [pt2], True, color, thickness)
+                for i, j in zip(range(4), range(4, 8)):
+                    cv2.line(img, tuple(corner[i]), tuple(
+                        corner[j]), color, thickness)
 
-            alpha = 1
-            beta = 0.55
-            gamma = 0
-            img = cv2.addWeighted(img, alpha, zeros_mask, beta, gamma)
+                # # option 2 drawing
+                index1 = [1, 0, 4, 5]
+                index2 = [0, 3, 7, 4]
+                index3 = [2, 3, 7, 6]
+                index4 = [1, 2, 6, 5]
+                zero1 = np.zeros((img.shape), dtype=np.uint8)
+                zero2 = np.zeros((img.shape), dtype=np.uint8)
+                zero3 = np.zeros((img.shape), dtype=np.uint8)
+                zero4 = np.zeros((img.shape), dtype=np.uint8)
+                zero_mask1 = cv2.fillConvexPoly(
+                    zero1, corner[index1, :], color)
+                zero_mask2 = cv2.fillConvexPoly(
+                    zero2, corner[index2, :], color)
+                zero_mask3 = cv2.fillConvexPoly(
+                    zero3, corner[index3, :], color)
+                zero_mask4 = cv2.fillConvexPoly(
+                    zero4, corner[index4, :], color)
+                zeros_mask = np.array(
+                    (zero_mask1 + zero_mask2 + zero_mask3 + zero_mask4))
+
+                alpha = 1
+                beta = 0.55
+                gamma = 0
+                img = cv2.addWeighted(img, alpha, zeros_mask, beta, gamma)
+            except:
+                pass
         self.img = img
         # cv2.imshow("Image", img)
         # cv2.waitKey(5)
@@ -151,6 +163,10 @@ class visualization:
                     if values[box_type] is True:
                         break
                 self.pub.publish(box_type)
+            if self.status == "Done":
+                self.gui.CompletedLED()
+            elif self.status == "Run":
+                self.gui.RunningLED()
 
             self.rate.sleep()
         self.gui.quit()

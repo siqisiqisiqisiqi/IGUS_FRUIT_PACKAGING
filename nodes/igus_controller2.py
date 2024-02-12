@@ -30,6 +30,8 @@ class IgusController():
         rospy.Subscriber("/box_type", String, self.get_container_type)
         # Init igus message publisher to control the robot
         self.robot_pub = rospy.Publisher("igus_message", String, queue_size=10)
+        # Init container status publisher to show on the gui
+        self.sys_pub = rospy.Publisher("system_status", String, queue_size=10)
         # Init igus driver
         self.encoder = IgusDriverEncoder()
         # Init the container type
@@ -50,6 +52,7 @@ class IgusController():
         self.box_type = None
         self.position = None
         self.capacity = None
+        self.peach_in_box = 0
 
     def get_container_type(self, data):
         container_type = data.data
@@ -84,7 +87,8 @@ class IgusController():
         except:
             rospy.loginfo(f"Not detect the peach!")
 
-    def calculate_target(self):
+    def corner_data_transformation(self):
+        target_list = []
         for i in range(self.num):
             corner = self.corner_data[i]
             corner_up = corner[:4, :]
@@ -92,11 +96,23 @@ class IgusController():
                                 keepdims=True).T  # shape (3,1)
             target = self.M @ center_up + self.T
             target[2, 0] = target[2, 0] + self.z_offset
-            # region constraints, if x < 0 and y > 0, then discard
-            if target[0, 0] < 0 and target[1, 0] > 0:
+            target_list.append(target.squeeze())
+        self.target_array = np.array(target_list)
+        # rospy.loginfo(
+        #     f"the shape of the target_array is {self.target_array.shape}.")
+
+    def calculate_target(self):
+        for array in self.target_array:
+            if array[0] < 0 and array[1] > 0:
                 continue
-            return target.squeeze()
+            return array
         return None
+
+    def calculate_peach_in_box(self):
+        self.peach_in_box = 0
+        for array in self.target_array:
+            if array[0] < 0 and array[1] > 0:
+                self.peach_in_box = self.peach_in_box + 1
 
     def robot_move(self, desired_position):
         # desired_position = desired_position.squeeze()
@@ -116,68 +132,65 @@ class IgusController():
 
     def gripper_open(self):
         message1, message2 = self.encoder.gripper(0, 0)
-        # self.robot_pub.publish(message1)
-        # rospy.loginfo(0.1)
         self.robot_pub.publish(message2)
 
     def gripper_open1(self):
         message1, message2 = self.encoder.gripper(0, 1)
         self.robot_pub.publish(message1)
-        # rospy.loginfo(0.1)
-        # self.robot_pub.publish(message2)
 
     def gripper_half_open(self):
         message1, message2 = self.encoder.gripper(1, 1)
-        # self.robot_pub.publish(message1)
-        # rospy.loginfo(0.1)
         self.robot_pub.publish(message2)
 
     def gripper_close(self):
         message1, message2 = self.encoder.gripper(1, 0)
         self.robot_pub.publish(message1)
-        # rospy.sleep(0.1)
-        # self.robot_pub.publish(message2)
         while self.gripper_flag == False:
             continue
 
     def run(self):
-        position = np.array([0, 0, 300])
+        # position = np.array([0, 0, 300])
         idx = 1
-        self.robot_move(position)
+        self.robot_move(self.home)
         self.gripper_open()
         while not rospy.is_shutdown():
 
-            if self.corner_data is not None and self.box_type is not None\
-                    and idx <= self.capacity:
-                target = self.calculate_target()
-                rospy.loginfo(f"target is {target}.")
+            if self.corner_data is not None and self.capacity is not None:
+                self.corner_data_transformation()
+                if self.peach_in_box < self.capacity:
+                    target = self.calculate_target()
+                    if target is not None:
+                        # move over the peach
+                        target_offset = np.array(
+                            [target[0], target[1], target[2] + 50])
+                        self.robot_move(target_offset)
+                        self.gripper_open()
+                        # move down to the peach
+                        self.robot_move(target)
+                        # close the gripper to pickup the peach
+                        self.gripper_close()
+                        # move the robot over the container
+                        p = self.position[idx]
+                        container_position = np.array([p[0], p[1], p[2] + 50])
+                        self.robot_move(container_position)
+                        # move the robot to the container
+                        self.robot_move(self.position[idx])
+                        # open the gripper to put the peach
+                        self.gripper_half_open()
+                        # move the robot to the home
+                        self.robot_move(self.home)
+                        self.gripper_open1()
+                        idx = idx + 1
 
-                if target is not None:
-                    # move over the peach
-                    target_offset = np.array(
-                        [target[0], target[1], target[2] + 50])
-                    self.robot_move(target_offset)
-                    self.gripper_open()
-                    # move down to the peach
-                    self.robot_move(target)
-                    # close the gripper to pickup the peach
-                    self.gripper_close()
-                    # move the robot over the container
-                    p = self.position[idx]
-                    container_position = np.array([p[0], p[1], p[2] + 70])
-                    self.robot_move(container_position)
-                    # move the robot to the container
-                    self.robot_move(self.position[idx])
-                    # open the gripper to put the peach
-                    self.gripper_half_open()
-                    # move the robot to the home
-                    self.robot_move(self.home)
-                    self.gripper_open1()
-                    idx = idx + 1
-
-            if idx == self.capacity:
-                rospy.loginfo("Finish the task!")
-                break
+                self.corner_data_transformation()
+                self.calculate_peach_in_box()
+                rospy.loginfo(f"number of peach in box is {self.peach_in_box}")
+                if self.peach_in_box == self.capacity:
+                    self.sys_pub.publish("Done")
+                    rospy.loginfo("Finish the task!")
+                    # break
+                else:
+                    self.sys_pub.publish("Run")
 
             self.rate.sleep()
 
