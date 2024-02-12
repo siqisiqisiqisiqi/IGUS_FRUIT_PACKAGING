@@ -26,11 +26,13 @@ class IgusController():
         # Init robot feedback subscribers
         rospy.Subscriber("/actual_position", RobotFeedback,
                          self.get_robot_data)
+        # Init container type subscriber
+        rospy.Subscriber("/box_type", String, self.get_container_type)
+        # Init igus message publisher to control the robot
+        self.robot_pub = rospy.Publisher("igus_message", String, queue_size=10)
         # Init igus driver
         self.encoder = IgusDriverEncoder()
-        #
-        self.robot_pub = rospy.Publisher("igus_message", String, queue_size=10)
-        # from world frame to robot frame
+        # Init the container type
         self.M = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         # self.T = np.array([[-57.53], [42.26], [-30]])
         self.T = np.array([[-70], [53], [-30]])
@@ -44,8 +46,16 @@ class IgusController():
         self.gripper_flag = False
         # init the corner data
         self.corner_data = None
+        # Init the container info
+        self.box_type = None
+        self.position = None
+        self.capacity = None
+
+    def get_container_type(self, data):
+        container_type = data.data
+        rospy.loginfo(f"container type is {container_type}.")
         # load the box info
-        self.box_type = "box2"
+        self.box_type = container_type
         path_file = f"{self.box_type}.yaml"
         with open(f"{parent}/config/{path_file}", "r") as f:
             box_info = yaml.safe_load(f)
@@ -137,8 +147,8 @@ class IgusController():
         self.gripper_open()
         while not rospy.is_shutdown():
 
-            if self.corner_data is not None and idx <= self.capacity \
-                    and self.box_type is not None:
+            if self.corner_data is not None and self.box_type is not None\
+                    and idx <= self.capacity:
                 target = self.calculate_target()
                 rospy.loginfo(f"target is {target}.")
 
