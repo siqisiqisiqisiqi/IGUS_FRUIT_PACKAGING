@@ -126,7 +126,7 @@ try:
     # This is my intended message (I use CMD DOUT since this creates a log entry on success)
 
     # Cartesian Movement
-    message = "CRISTART 1234 CMD Move Cart 0 0 200 0 0 0 0 0 0 100 CRIEND"
+    message = "CRISTART 1234 CMD Move Cart 0 0 250 0 0 0 0 0 0 100 CRIEND"
     # message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
 
     # Joint Movement
