@@ -114,6 +114,19 @@ class IgusController():
             if array[0] < 0 and array[1] > 0:
                 self.peach_in_box = self.peach_in_box + 1
 
+    def calculate_container_space(self):
+        empty_position = [x + 1 for x in range(self.capacity)]
+        pp_xy_array = self.target_array
+        for key, value in self.position.items():
+            xy = value[:2]
+            dist = norm(pp_xy_array[:, :2] - xy, axis=1)
+            dist_min = np.min(dist)
+            if dist_min < 50:
+                idx_peach = np.argmin(dist)
+                empty_position.remove(key)
+                pp_xy_array = np.delete(pp_xy_array, (idx_peach), axis=0)
+        return empty_position, pp_xy_array
+
     def robot_move(self, desired_position):
         # desired_position = desired_position.squeeze()
         rospy.loginfo(f"desired_position is {desired_position}.")
@@ -156,9 +169,23 @@ class IgusController():
         while not rospy.is_shutdown():
 
             if self.corner_data is not None and self.capacity is not None:
+
                 self.corner_data_transformation()
-                if self.peach_in_box < self.capacity:
-                    target = self.calculate_target()
+                empty_position, peach_array = self.calculate_container_space()
+
+                rospy.loginfo(
+                    f"number of peach in box is {4-len(empty_position)}")
+                if len(empty_position) == 0:
+                    self.sys_pub.publish("Done")
+                    rospy.loginfo("Finish the task!")
+                    # break
+                else:
+                    self.sys_pub.publish("Run")
+
+                # if self.peach_in_box < self.capacity:
+                if len(empty_position) > 0 and peach_array.shape[0] > 0:
+                    target = peach_array[0]
+                    # target = self.calculate_target()
                     if target is not None:
                         # move over the peach
                         target_offset = np.array(
@@ -169,12 +196,16 @@ class IgusController():
                         self.robot_move(target)
                         # close the gripper to pickup the peach
                         self.gripper_close()
+                        # calculate the container sparse position
+
                         # move the robot over the container
-                        p = self.position[idx]
-                        container_position = np.array([p[0], p[1], p[2] + 50])
+                        # p = self.position[idx]
+                        p = self.position[empty_position[0]]
+                        container_position = np.array([p[0], p[1], p[2] + 55])
                         self.robot_move(container_position)
                         # move the robot to the container
-                        self.robot_move(self.position[idx])
+                        # self.robot_move(self.position[idx])
+                        self.robot_move(self.position[empty_position[0]])
                         # open the gripper to put the peach
                         self.gripper_half_open()
                         # move the robot to the home
@@ -182,15 +213,15 @@ class IgusController():
                         self.gripper_open1()
                         idx = idx + 1
 
-                self.corner_data_transformation()
-                self.calculate_peach_in_box()
-                rospy.loginfo(f"number of peach in box is {self.peach_in_box}")
-                if self.peach_in_box == self.capacity:
-                    self.sys_pub.publish("Done")
-                    rospy.loginfo("Finish the task!")
-                    # break
-                else:
-                    self.sys_pub.publish("Run")
+                # self.corner_data_transformation()
+                # self.calculate_peach_in_box()
+                # rospy.loginfo(f"number of peach in box is {self.peach_in_box}")
+                # if self.peach_in_box == self.capacity:
+                #     self.sys_pub.publish("Done")
+                #     rospy.loginfo("Finish the task!")
+                #     # break
+                # else:
+                #     self.sys_pub.publish("Run")
 
             self.rate.sleep()
 
