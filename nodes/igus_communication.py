@@ -35,7 +35,7 @@ class IgusCommunication():
         # digital input
         self.din = []
         # alive message frequency
-        self.rate = rospy.Rate(50)
+        self.rate = rospy.Rate(100)
 
     def start_machine(self):
         messageConnect = "CRISTART 1234 CMD Connect CRIEND"
@@ -89,7 +89,7 @@ class IgusCommunication():
         rospy.loginfo("finish the robot referencing.")
 
     def message_callback(self, data):
-        rospy.loginfo(f"receive the data is {data.data}")
+        # rospy.loginfo(f"receive the data is {data.data}")
         move_message = data.data
         encoded = move_message.encode('utf-8')
         move_array = bytearray(encoded)
@@ -99,7 +99,7 @@ class IgusCommunication():
         i_f = 0
         while not rospy.is_shutdown():
             i_f = i_f + 1
-            if i_f > 10:
+            if i_f > 20:
                 self.sock.sendall(self.arrayAliveJog)
                 i_f = 0
             data = self.sock.recv(1024).decode()

@@ -49,8 +49,7 @@ class IgusController():
         # gripper trigger to identify if it is successfully picking up the peach
         self.gripper_flag = False
         # init the corner data
-        self.corner_data = []
-        self.corner_time = None
+        self.corner_data = None
         # Init the container info
         self.box_type = None
         self.position = None
@@ -91,7 +90,6 @@ class IgusController():
             # CHANGE THE UNIT FROM CENTIMETER TO MILLIMETER
             self.corner_data = np.array(corner_data) * 10
             self.num = self.corner_data.shape[0]
-            self.corner_time = data.stamp.secs + 1e-9 * data.stamp.nsecs
             # rospy.loginfo(f"The peach position is {self.corner_data}.")
         except:
             rospy.loginfo(f"Not detect the peach!")
@@ -113,7 +111,6 @@ class IgusController():
     def calculate_container_space(self):
         empty_position = [x + 1 for x in range(self.capacity)]
         pp_xy_array = self.target_array
-
         for key, value in self.position.items():
             xy = value[:2]
             dist = norm(pp_xy_array[:, :2] - xy, axis=1)
@@ -122,8 +119,6 @@ class IgusController():
                 idx_peach = np.argmin(dist)
                 empty_position.remove(key)
                 pp_xy_array = np.delete(pp_xy_array, (idx_peach), axis=0)
-            if len(pp_xy_array) == 0:
-                break
         return empty_position, pp_xy_array
 
     def robot_move(self, desired_position):
@@ -134,7 +129,7 @@ class IgusController():
         for i in range(2):
             self.robot_pub.publish(move_message)
             rospy.sleep(0.05)
-        # rospy.loginfo("successfully publish the data")
+        rospy.loginfo("successfully publish the data")
         rospy.sleep(0.02)
         while norm(np.array(self.actual_pos) - np.array(desired_position)) > 5:
             # rospy.loginfo(f"actual position is {self.actual_pos}")
@@ -165,8 +160,8 @@ class IgusController():
         while not rospy.is_shutdown():
 
             if self.reset == False:
-                if len(self.corner_data) > 0 and self.capacity is not None:
-                    data_t = self.corner_time
+                if self.corner_data is not None and self.capacity is not None:
+
                     self.corner_data_transformation()
                     empty_position, peach_array = self.calculate_container_space()
 
@@ -181,10 +176,6 @@ class IgusController():
                     if len(empty_position) > 0 and peach_array.shape[0] > 0:
                         target = peach_array[0]
                         if target is not None:
-                            target = dynamic_path_estimation(
-                                peach_array, self.home, data_t)
-                            if target is None:
-                                continue
                             # move over the peach
                             target_offset = np.array(
                                 [target[0], target[1], target[2] + 50])
@@ -207,7 +198,6 @@ class IgusController():
                             self.robot_move(self.home)
                             self.gripper_open1()
             else:
-                self.corner_data = []
                 rospy.loginfo(f"Reset the system!")
                 self.robot_move(self.home)
             self.rate.sleep()

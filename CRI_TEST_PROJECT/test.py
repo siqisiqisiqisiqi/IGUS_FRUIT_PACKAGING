@@ -120,13 +120,13 @@ def close_machine():
 
 try:
     start_machine()
-    # reference_machine()
+
     # The ALIVEJOG message needs to be sent regularly (at least once a second) to keep the connection alive
     messageAliveJog = "CRISTART 1234 ALIVEJOG 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 CRIEND"
     # This is my intended message (I use CMD DOUT since this creates a log entry on success)
 
     # Cartesian Movement
-    message = "CRISTART 1234 CMD Move Cart 0 0 250 0 0 0 0 0 0 100 CRIEND"
+    message = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 100 CRIEND"
     # message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
 
     # Joint Movement
@@ -134,6 +134,10 @@ try:
 
     # message = "CRISTART 1234 CMD DOUT 21 true CRIEND"
     # message1 = "CRISTART 1234 CMD DOUT 22 true CRIEND"
+
+    print("Keeping connection alive")
+    alive_client.start()
+    # reference_machine()
 
     # # # Encode the messages
     encoded = message.encode('utf-8')
@@ -173,8 +177,6 @@ try:
 # I'm sending 10 more ALIVEJOG messages to keep the connection alive.
 # If I drop the connection too early our message may not get through.
 # A production program should send this once or twice a second from a parallel thread.
-    print("Keeping connection alive")
-    alive_client.start()
 
     # time.sleep(5)
     # # Digital Output

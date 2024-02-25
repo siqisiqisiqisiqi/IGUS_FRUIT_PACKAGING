@@ -62,7 +62,11 @@ class visualization:
         self.status = "Wait"
 
     def get_system_status(self, data):
-        self.status = data.data
+        status = data.data
+        if self.status == "Reset" and status == "Done":
+            pass
+        else:
+            self.status = status
 
     def get_image(self, data):
         try:
@@ -136,11 +140,8 @@ class visualization:
             except:
                 pass
         self.img = img
-        # cv2.imshow("Image", img)
-        # cv2.waitKey(5)
 
     def run(self):
-        # rospy.on_shutdown(self.gui.quit())
         rospy.sleep(5)
         box_types = ['Type1', 'Type2', 'Type3']
 
@@ -163,6 +164,12 @@ class visualization:
                     if values[box_type] is True:
                         break
                 self.pub.publish(box_type)
+            elif event == "Reset":
+                self.status = "Reset"
+                self.gui.WaitingLED()
+                box_type = "Reset"
+                self.pub.publish(box_type)
+
             if self.status == "Done":
                 self.gui.CompletedLED()
             elif self.status == "Run":
