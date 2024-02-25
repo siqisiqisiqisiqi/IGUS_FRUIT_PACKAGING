@@ -50,7 +50,6 @@ class HMI:
         self.path = path
         self.camera_img_viewer = ImageViewer(img_sz)
         self.window = self._init_layout()
-        
 
     def _init_layout(self):
         top_banner = [
@@ -78,7 +77,7 @@ class HMI:
                              enable_events=True, size=(10, 1)),
                     sg.Image(f"{self.path}/type3.png", enable_events=True)],
                    [sg.T('Select the type of the packages.', font='Any 12')],
-                   [sg.Button('Go'), sg.Button('Exit')]]
+                   [sg.Button('Go'), sg.Button('Exit'), sg.Button('Reset')]]
 
         block_4 = [[sg.Text('', font='Any 20')],
                    [sg.Push(), sg.Text('Real-time scene', font='Any 20'), sg.Push()],
@@ -136,39 +135,42 @@ class HMI:
         self.window.close()
 
 
-# def main():
-#     hmi = HMI()
-#     i = 0
-#     img_path = "src/figures/fruit_detection.png"
-#     hmi.WaitingLED()
-#     while True:
-#         i = i + 1
-#         t = time.time()
-#         event, value = hmi.window.read(timeout=10)
-#         if event == "Go":
-#             if value['Type1'] == True:
-#                 box_type = 1
-#             elif value['Type2'] == True:
-#                 box_type = 2
-#             else:
-#                 box_type = 3
-#             print(f"box_type is {box_type}.")
-#         if event == sg.WIN_CLOSED or event == 'Exit':
-#             break
-#         if i == 200:
-#             hmi.RunningLED()
-#         elif i == 400:
-#             hmi.CompletedLED()
-#         elif i == 600:
-#             hmi.WaitingLED()
-#             i = 0
+def main():
+    hmi = HMI()
+    i = 0
+    img_path = "src/figures/fruit_detection.png"
+    hmi.WaitingLED()
+    while True:
+        i = i + 1
+        t = time.time()
+        event, value = hmi.window.read(timeout=10)
+        if event == "Reset":
+            hmi.WaitingLED()
+        if event == "Go":
+            hmi.RunningLED()
+            if value['Type1'] == True:
+                box_type = 1
+            elif value['Type2'] == True:
+                box_type = 2
+            else:
+                box_type = 3
+            print(f"box_type is {box_type}.")
+        if event == sg.WIN_CLOSED or event == 'Exit':
+            break
+        # if i == 200:
+        #     hmi.RunningLED()
+        # elif i == 400:
+        #     hmi.CompletedLED()
+        # elif i == 600:
+        #     hmi.WaitingLED()
+        #     i = 0
 
-#         img = cv2.imread(img_path)
-#         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-#         hmi.update_camera_img(img)
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        hmi.update_camera_img(img)
 
-#     hmi.window.close()
+    hmi.window.close()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

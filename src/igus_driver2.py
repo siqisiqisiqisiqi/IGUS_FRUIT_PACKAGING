@@ -13,13 +13,13 @@ class IgusDriverEncoder():
         if z > 300:
             z = 300
             print("z exceed the range!!!")
-        if abs(x) > 200:
-            x = np.sign(x) * 200
+        if abs(x) > 250:
+            x = np.sign(x) * 250
             print("x exceed the range!!!")
-        if abs(y) > 200:
-            y = np.sign(y) * 200
+        if abs(y) > 250:
+            y = np.sign(y) * 250
             print("y exceed the range!!!")
-        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 200 CRIEND"
+        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 700 CRIEND"
         encoded = message.encode('utf-8')
         move_array = bytearray(encoded)
         return message
