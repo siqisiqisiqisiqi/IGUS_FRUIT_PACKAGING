@@ -67,7 +67,7 @@ def cartesian_move_array(position):
     x = position[0]
     y = position[1]
     z = position[2]
-    message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 700 CRIEND"
+    message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 200 CRIEND"
     encoded = message.encode('utf-8')
     move_array = bytearray(encoded)
     return move_array
@@ -143,8 +143,8 @@ def main():
     home = [0, 0, 300]
     position = []
     position1 = [0, 0, 300]
-    position2 = [0, 0, 100]
-    position3 = [0, 150, 150]
+    position2 = [0, 0, 150]
+    position3 = [0, 0, 150]
     position4 = [0, 0, 300]
     position.append(position1)
     position.append(position2)

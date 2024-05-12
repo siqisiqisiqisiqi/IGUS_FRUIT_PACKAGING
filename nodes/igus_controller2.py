@@ -12,6 +12,7 @@ import rospy
 import numpy as np
 from numpy.linalg import norm
 from std_msgs.msg import String
+import pickle
 
 from zed_3D_detection.msg import Box3d
 from src.igus_driver2 import IgusDriverEncoder
@@ -58,6 +59,16 @@ class IgusController():
         # Reset status
         self.reset = False
 
+        # This is for debugging
+        # self.box_type = "Type1"
+        # path_file = f"{self.box_type}.yaml"
+        # with open(f"{parent}/config/{path_file}", "r") as f:
+        #     box_info = yaml.safe_load(f)
+        # self.position = box_info["Position"]
+        # self.capacity = box_info["Capacity"][0]
+        # self.save_data = []
+        # self.save_time = []
+
     def get_container_type(self, data):
         container_type = data.data
         if container_type == "Reset":
@@ -93,6 +104,20 @@ class IgusController():
             self.num = self.corner_data.shape[0]
             self.corner_time = data.stamp.secs + 1e-9 * data.stamp.nsecs
             # rospy.loginfo(f"The peach position is {self.corner_data}.")
+
+            # self.corner_data_transformation()
+            # _, a = self.calculate_container_space()
+            # self.save_data.append(a[0, 1])
+            # self.save_time.append(self.corner_time)
+            # if len(self.save_data) == 150:
+            #     with open(f"{parent}/test3", "wb") as fp:  # Pickling
+            #         pickle.dump(self.save_data, fp)
+            #     with open(f"{parent}/time", "wb") as fp:  # Pickling
+            #         pickle.dump(self.save_time, fp)
+            #         rospy.loginfo(
+            #             f"Successfully save the data!!!!!!!!!!!!!!!!!!")
+
+            # rospy.loginfo(f"The position of the peach is {a}.")
         except:
             rospy.loginfo(f"Not detect the peach!")
 
@@ -107,13 +132,10 @@ class IgusController():
             target[2, 0] = target[2, 0] + self.z_offset
             target_list.append(target.squeeze())
         self.target_array = np.array(target_list)
-        # rospy.loginfo(
-        #     f"the shape of the target_array is {self.target_array.shape}.")
 
     def calculate_container_space(self):
         empty_position = [x + 1 for x in range(self.capacity)]
         pp_xy_array = self.target_array
-
         for key, value in self.position.items():
             xy = value[:2]
             dist = norm(pp_xy_array[:, :2] - xy, axis=1)
@@ -124,22 +146,33 @@ class IgusController():
                 pp_xy_array = np.delete(pp_xy_array, (idx_peach), axis=0)
             if len(pp_xy_array) == 0:
                 break
+        # try:
+        #     i = 0
+        #     if len(pp_xy_array) > 0:
+        #         for value in pp_xy_array:
+        #             if value[0] < 0:
+        #                 pp_xy_array = np.delete(pp_xy_array, (i), axis=0)
+        #                 i = i + 1
+        # except:
+        #     pass
+        i = 0
+        if len(pp_xy_array) > 0:
+            for value in pp_xy_array:
+                if value[0] < 0:
+                    pp_xy_array = np.delete(pp_xy_array, (i), axis=0)
+                    i = i + 1
         return empty_position, pp_xy_array
 
     def robot_move(self, desired_position):
-        # rospy.loginfo(f"desired_position is {desired_position}.")
         # desired position in millimeter
         move_message = self.encoder.cartesian_move(desired_position)
         # In case losing the message
         for i in range(2):
             self.robot_pub.publish(move_message)
             rospy.sleep(0.05)
-        # rospy.loginfo("successfully publish the data")
         rospy.sleep(0.02)
         while norm(np.array(self.actual_pos) - np.array(desired_position)) > 5:
-            # rospy.loginfo(f"actual position is {self.actual_pos}")
             rospy.sleep(0.05)
-        # rospy.loginfo("successfully go to the desired position.")
 
     def gripper_open(self):
         _, message2 = self.encoder.gripper(0, 0)
@@ -160,18 +193,17 @@ class IgusController():
             continue
 
     def run(self):
+        rospy.loginfo("1")
         self.robot_move(self.home)
         self.gripper_open()
+        i = 1
         while not rospy.is_shutdown():
-
             if self.reset == False:
                 if len(self.corner_data) > 0 and self.capacity is not None:
                     data_t = self.corner_time
                     self.corner_data_transformation()
                     empty_position, peach_array = self.calculate_container_space()
 
-                    rospy.loginfo(
-                        f"number of peach in box is {4-len(empty_position)}")
                     if len(empty_position) == 0:
                         self.sys_pub.publish("Done")
                         rospy.loginfo("Finish the task!")
@@ -186,8 +218,10 @@ class IgusController():
                             if target is None:
                                 continue
                             # move over the peach
+                            # target_offset = np.array(
+                            #     [target[0], target[1], target[2] + 50])
                             target_offset = np.array(
-                                [target[0], target[1], target[2] + 50])
+                                [target[0], target[1] - 20, target[2] + 50])
                             self.robot_move(target_offset)
                             self.gripper_open()
                             # move down to the peach
@@ -195,17 +229,28 @@ class IgusController():
                             # close the gripper to pickup the peach
                             self.gripper_close()
                             # move the robot over the container
-                            p = self.position[empty_position[0]]
+                            # p = self.position[empty_position[0]]
+
+                            p = self.position[i]
                             container_position = np.array(
-                                [p[0], p[1], p[2] + 55])
+                                [p[0], p[1], p[2] + 50])
+                            # container_position = np.array(
+                            #     [p[0], p[1], p[2] + 90])
+
                             self.robot_move(container_position)
+                            # self.robot_move(self.home)
                             # move the robot to the container
-                            self.robot_move(self.position[empty_position[0]])
+                            self.robot_move(p)
                             # open the gripper to put the peach
                             self.gripper_half_open()
+                            rospy.sleep(0.4)
                             # move the robot to the home
                             self.robot_move(self.home)
                             self.gripper_open1()
+                            i = i + 1
+                            if i > 4:
+                                i = 1
+                            rospy.sleep(0.2)
             else:
                 self.corner_data = []
                 rospy.loginfo(f"Reset the system!")
@@ -219,5 +264,5 @@ class IgusController():
 if __name__ == "__main__":
     print("start the igus controller")
     client = IgusController()
-    rospy.loginfo(1)
+    rospy.sleep(1)
     client.run()

@@ -27,8 +27,7 @@ class visualization:
         rospy.sleep(3)
 
         # Init image subscribers
-        rospy.Subscriber("zed2i/zed_node/rgb/image_rect_color",
-                         Image, self.get_image)
+        rospy.Subscriber("accurate_image", Image, self.get_image)
 
         # Init corners subscribers
         rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
@@ -142,18 +141,20 @@ class visualization:
         self.img = img
 
     def run(self):
-        rospy.sleep(5)
+        rospy.sleep(3)
         box_types = ['Type1', 'Type2', 'Type3']
 
         self.gui.WaitingLED()
         while not rospy.is_shutdown():
 
-            self.visualization()
             try:
+                self.visualization()
                 self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                 self.gui.update_camera_img(self.img)
             except:
-                rospy.loginfo("Have not detected the peach!")
+                self.img = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
+                self.gui.update_camera_img(self.img)
+                # rospy.loginfo("Have not detected the peach!")
 
             event, values = self.gui.window.read(timeout=10)
             if event == sg.WIN_CLOSED or event == 'Exit':

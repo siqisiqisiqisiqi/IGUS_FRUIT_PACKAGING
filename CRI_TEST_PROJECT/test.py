@@ -126,18 +126,18 @@ try:
     # This is my intended message (I use CMD DOUT since this creates a log entry on success)
 
     # Cartesian Movement
-    message = "CRISTART 1234 CMD Move Cart 0 0 300 0 0 0 0 0 0 100 CRIEND"
-    # message = "CRISTART 1234 CMD Move Cart 0 0 100 0 0 0 0 0 0 100 CRIEND"
+    # message = "CRISTART 1234 CMD Move Cart 190 -90 120 0 0 0 0 0 0 100 CRIEND"
+    message = "CRISTART 1234 CMD Move Cart 0 0 200 0 0 0 0 0 0 100 CRIEND"
 
     # Joint Movement
     # message = "CRISTART 1234 CMD Move Joint 0 0 100 0 0 0 0 0 0 20 CRIEND"
 
-    # message = "CRISTART 1234 CMD DOUT 21 true CRIEND"
+    # message = "CRISTART 1234 CMD DOUT 21  CRIEND"
     # message1 = "CRISTART 1234 CMD DOUT 22 true CRIEND"
 
     print("Keeping connection alive")
     alive_client.start()
-    # reference_machine()
+    reference_machine()
 
     # # # Encode the messages
     encoded = message.encode('utf-8')
@@ -202,7 +202,7 @@ try:
 
         # print(f'the position of the robot is {alive_client.cartesian_position}')
         # print(f"the high input port is {alive_client.din}")
-        time.sleep(0.3)
+        time.sleep(1)
 
 finally:
     print("Finally")

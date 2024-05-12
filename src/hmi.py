@@ -54,13 +54,13 @@ class HMI:
     def _init_layout(self):
         top_banner = [
             [sg.Text('Titan Farm', font='Any 20', background_color=DARK_HEADER_COLOR, enable_events=True, grab=False), sg.Push(background_color=DARK_HEADER_COLOR),
-             sg.Text('Tuesday 13 Feb 2024', font='Any 20', background_color=DARK_HEADER_COLOR)],
+             sg.Text('Tuesday 19 March 2024', font='Any 20', background_color=DARK_HEADER_COLOR)],
         ]
 
         col1 = [[self.LEDIndicator('_wait_')], [sg.Text('Waiting')]]
         col2 = [[self.LEDIndicator('_run_')], [sg.Text('Running')]]
         col3 = [[self.LEDIndicator('_complete_')], [sg.Text('Completed')]]
-        top = [[sg.Push(), sg.Text('The Status Of The Taskh', font='Any 20'), sg.Push()],
+        top = [[sg.Push(), sg.Text('The Status Of The Task', font='Any 20'), sg.Push()],
                [sg.Push(), sg.Column(col1, element_justification='c'), sg.Push(),
                 sg.Column(col2, element_justification='c'), sg.Push(),
                 sg.Column(col3, element_justification='c'), sg.Push()]]

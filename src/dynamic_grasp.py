@@ -51,33 +51,66 @@ def constant_jerk_kinematic_model(target, home, vel, offset=50):
     return round(t_sum, 4)
 
 
-def dynamic_path_estimation(peach_array, home, data_t, vel=700):
-    conveyor_vel = 43  # mm/s
+def dynamic_path_estimation(peach_array, home, data_t, vel=500):
+    # conveyor_vel = 43  # mm/s
+    conveyor_vel = 75  # mm/s
+    # conveyor_vel = 0
 
     # Step 1: check if the peach is in the certain region
-    target_peach = None
+    target_peach_list = []
     for peach in peach_array:
         y = peach[1]
-        if y > 100 and y < 300:
-            target_peach = peach
-            break
+        if y > 0 and y < 300:
+            target_peach_list.append(peach)
     # If there is no peach in this area, don't do anything
-    if target_peach is None:
+    if len(target_peach_list) == 0:
         return None
+
+    target_peach_array = np.array(target_peach_list)
+    peach_index = np.argmin(target_peach_array, axis=0)
+    target_peach = target_peach_array[peach_index[1]]
+
     # Step 2: estimate and plan the grasping point
     # Opt 1: grasp the peach at the center of the conveyor
-    picking_peach_goal = np.array([target_peach[0], 0, target_peach[2]])
-    t_robot = constant_jerk_kinematic_model(picking_peach_goal, home, vel)
-    y_dist = abs(target_peach[1])
+    # picking_peach_goal = np.array([target_peach[0], 0, target_peach[2]])
+    # t_robot = constant_jerk_kinematic_model(picking_peach_goal, home, vel)
+    # y_dist = abs(target_peach[1])
+    # t_conveyor = y_dist / conveyor_vel
+    # seconds = rospy.get_time()
+    # t_data_diff = seconds - data_t
+    # t_diff = t_conveyor - t_robot - t_data_diff
+    # if t_diff < 0:
+    #     rospy.loginfo("Can't reach the peach!")
+    #     return None
+    # rospy.sleep(t_diff)
+    # return picking_peach_goal
+
+    # Opt 2: grasp the peach with minimum time
+    # rospy.loginfo(f"target peach value is {target_peach}.")
+    t_array = np.zeros(11)
+    a = target_peach.reshape([1, -1])
+    picking_peach_array = np.repeat(a, 11, axis=0)
+    picking_peach_array[:, 1] = np.linspace(-150, 150, num=11)
+    for index in range(11):
+        picking_peach = picking_peach_array[index]
+        t_robot = constant_jerk_kinematic_model(picking_peach, home, vel)
+        y_dist = target_peach[1] - picking_peach[1]
+        if y_dist < 0:
+            t_array[index] = 1e4
+            continue
+        t_conveyor = y_dist / conveyor_vel
+        t_sum = t_robot + t_conveyor
+        t_array[index] = t_sum
+    min_index = np.argmin(t_array)
+    picking_peach = picking_peach_array[min_index]
+    t_robot = constant_jerk_kinematic_model(picking_peach, home, vel)
+    y_dist = target_peach[1] - picking_peach[1]
+    if y_dist < 0:
+        return None
     t_conveyor = y_dist / conveyor_vel
     seconds = rospy.get_time()
     t_data_diff = seconds - data_t
-    rospy.loginfo(f"t data difference is {t_data_diff}.")
     t_diff = t_conveyor - t_robot - t_data_diff
-    if t_diff < 0:
-        rospy.loginfo("Can't reach the peach!")
-        return None
-    rospy.sleep(t_diff)
-    return picking_peach_goal
-
-    # Opt 2: grasp the peach with minimum time
+    if t_diff > 0:
+        rospy.sleep(t_diff)
+    return picking_peach
