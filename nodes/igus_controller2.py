@@ -156,11 +156,13 @@ class IgusController():
         # except:
         #     pass
         i = 0
+        delete_i = []
         if len(pp_xy_array) > 0:
             for value in pp_xy_array:
                 if value[0] < 0:
-                    pp_xy_array = np.delete(pp_xy_array, (i), axis=0)
-                    i = i + 1
+                    delete_i.append(i)
+                i = i + 1
+        pp_xy_array = np.delete(pp_xy_array, delete_i, axis=0)
         return empty_position, pp_xy_array
 
     def robot_move(self, desired_position):
