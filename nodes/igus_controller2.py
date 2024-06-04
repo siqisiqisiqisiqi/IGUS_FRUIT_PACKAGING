@@ -30,6 +30,10 @@ class IgusController():
                          self.get_robot_data)
         # Init container type subscriber
         rospy.Subscriber("/box_type", String, self.get_container_type)
+
+        # Init conveyor status subscriber
+        rospy.Subscriber("/conveyor_status", String, self.get_conveyor_status)
+
         # Init igus message publisher to control the robot
         self.robot_pub = rospy.Publisher("igus_message", String, queue_size=10)
         # Init container status publisher to show on the gui
@@ -59,6 +63,9 @@ class IgusController():
         # Reset status
         self.reset = False
 
+        # Init the convey status
+        self.convey_status = "run"
+
         # This is for debugging
         # self.box_type = "Type1"
         # path_file = f"{self.box_type}.yaml"
@@ -68,6 +75,9 @@ class IgusController():
         # self.capacity = box_info["Capacity"][0]
         # self.save_data = []
         # self.save_time = []
+
+    def get_conveyor_status(self, data):
+        self.convey_status = data.data
 
     def get_container_type(self, data):
         container_type = data.data
@@ -200,7 +210,7 @@ class IgusController():
         self.gripper_open()
         i = 1
         while not rospy.is_shutdown():
-            if self.reset == False:
+            if self.reset == False and self.convey_status == "stop":
                 if len(self.corner_data) > 0 and self.capacity is not None:
                     data_t = self.corner_time
                     self.corner_data_transformation()
