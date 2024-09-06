@@ -26,15 +26,6 @@ class visualization:
 
         rospy.sleep(3)
 
-        # Init image subscribers
-        rospy.Subscriber("accurate_image", Image, self.get_image)
-
-        # Init corners subscribers
-        rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
-
-        # Robot status
-        rospy.Subscriber("/system_status", String, self.get_system_status)
-
         # Publish the type of the box
         self.pub = rospy.Publisher('box_type', String, queue_size=10)
 
@@ -48,7 +39,9 @@ class visualization:
 
         # Define the color used to visualized
         self.colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255),
-                       (0, 255, 255), (255, 0, 255)]
+                       (0, 255, 255), (255, 0, 255), (255, 128, 0),
+                       (128, 0, 128), (255, 192, 203), (128, 128, 0)]
+
         self.corner_data = None
         self.num = 0  # num of the peach
         self.robot_status = 0
@@ -59,6 +52,15 @@ class visualization:
 
         self.img = None
         self.status = "Wait"
+
+        # Init image subscribers
+        rospy.Subscriber("accurate_image", Image, self.get_image)
+
+        # Init corners subscribers
+        rospy.Subscriber("/corners_test", Box3d, self.get_corners_data)
+
+        # Robot status
+        rospy.Subscriber("/system_status", String, self.get_system_status)
 
     def get_system_status(self, data):
         status = data.data

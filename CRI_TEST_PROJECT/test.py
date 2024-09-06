@@ -88,7 +88,7 @@ def reference_machine():
     array = bytearray(encodedReference)
     sock.sendall(array)
     print("start reference the robot.")
-    time.sleep(30)
+    time.sleep(60)
     print("finish the robot referencing.")
 
 
@@ -127,7 +127,7 @@ try:
 
     # Cartesian Movement
     # message = "CRISTART 1234 CMD Move Cart 190 -90 120 0 0 0 0 0 0 100 CRIEND"
-    message = "CRISTART 1234 CMD Move Cart 0 0 200 0 0 0 0 0 0 100 CRIEND"
+    message = "CRISTART 1234 CMD Move Cart 0 0 200 0 0 0 0 0 0 200 CRIEND"
 
     # Joint Movement
     # message = "CRISTART 1234 CMD Move Joint 0 0 100 0 0 0 0 0 0 20 CRIEND"

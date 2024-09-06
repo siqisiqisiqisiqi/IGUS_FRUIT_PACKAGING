@@ -73,7 +73,7 @@ def cartesian_move_array(position):
     return move_array
 
 
-def gripper(sock, D22=1, D23=1):
+def gripper(sock, D21=1, D22=1):
     if D22 == 0:
         message = "CRISTART 1234 CMD DOUT 22 false CRIEND"
     else:
@@ -82,10 +82,10 @@ def gripper(sock, D22=1, D23=1):
     Dout_array = bytearray(encoded)
     sock.sendall(Dout_array)
 
-    if D23 == 0:
-        message = "CRISTART 1234 CMD DOUT 23 false CRIEND"
+    if D21 == 0:
+        message = "CRISTART 1234 CMD DOUT 21 false CRIEND"
     else:
-        message = "CRISTART 1234 CMD DOUT 23 true CRIEND"
+        message = "CRISTART 1234 CMD DOUT 21 true CRIEND"
     encoded = message.encode('utf-8')
     Dout_array = bytearray(encoded)
     sock.sendall(Dout_array)
@@ -143,16 +143,20 @@ def main():
     home = [0, 0, 300]
     position = []
     position1 = [0, 0, 300]
+    # position2 = [-120, 95, 150]
     position2 = [0, 0, 150]
-    position3 = [0, 0, 150]
-    position4 = [0, 0, 300]
+
+    position3 = [0, 0, 300]
+    # position4 = [0, 0, 300]
+
     position.append(position1)
     position.append(position2)
+
     position.append(position3)
-    position.append(position4)
+    # position.append(position4)
 
     alive_client.start()
-    gripper(sock, 1, 1)
+    gripper(sock, 0, 0)
 
     array = cartesian_move_array(home)
     sock.sendall(array)

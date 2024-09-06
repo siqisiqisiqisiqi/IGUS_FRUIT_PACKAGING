@@ -210,15 +210,17 @@ class IgusController():
         self.gripper_open()
         i = 1
         while not rospy.is_shutdown():
-            if self.reset == False and self.convey_status == "stop":
+            # if self.reset == False and self.convey_status == "stop":
+            if self.reset == False:
                 if len(self.corner_data) > 0 and self.capacity is not None:
                     data_t = self.corner_time
                     self.corner_data_transformation()
                     empty_position, peach_array = self.calculate_container_space()
-
                     if len(empty_position) == 0:
                         self.sys_pub.publish("Done")
                         rospy.loginfo("Finish the task!")
+                        rospy.sleep(0.1)
+                        self.sys_pub.publish("Done")
                     else:
                         self.sys_pub.publish("Run")
 
@@ -237,6 +239,7 @@ class IgusController():
                             self.robot_move(target_offset)
                             self.gripper_open()
                             # move down to the peach
+                            target[2] = target[2] - 10
                             self.robot_move(target)
                             # close the gripper to pickup the peach
                             self.gripper_close()
@@ -244,13 +247,11 @@ class IgusController():
                             # p = self.position[empty_position[0]]
 
                             p = self.position[i]
-                            container_position = np.array(
-                                [p[0], p[1], p[2] + 50])
                             # container_position = np.array(
-                            #     [p[0], p[1], p[2] + 90])
+                            #     [p[0], p[1], p[2] + 80])
 
-                            self.robot_move(container_position)
-                            # self.robot_move(self.home)
+                            # self.robot_move(container_position)
+                            self.robot_move(self.home)
                             # move the robot to the container
                             self.robot_move(p)
                             # open the gripper to put the peach
@@ -260,9 +261,11 @@ class IgusController():
                             self.robot_move(self.home)
                             self.gripper_open1()
                             i = i + 1
-                            if i > 4:
+                            if i > 9:
                                 i = 1
                             rospy.sleep(0.2)
+                else:
+                    self.sys_pub.publish("Wait")
             else:
                 self.corner_data = []
                 rospy.loginfo(f"Reset the system!")

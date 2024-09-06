@@ -13,8 +13,8 @@ class IgusDriverEncoder():
         if z > 300:
             z = 300
             print("z exceed the range!!!")
-        if abs(x) > 250:
-            x = np.sign(x) * 250
+        if abs(x) > 270:
+            x = np.sign(x) * 270
             print("x exceed the range!!!")
         if abs(y) > 250:
             y = np.sign(y) * 250

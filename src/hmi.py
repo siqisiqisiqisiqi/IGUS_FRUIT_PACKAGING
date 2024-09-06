@@ -54,7 +54,7 @@ class HMI:
     def _init_layout(self):
         top_banner = [
             [sg.Text('Titan Farm', font='Any 20', background_color=DARK_HEADER_COLOR, enable_events=True, grab=False), sg.Push(background_color=DARK_HEADER_COLOR),
-             sg.Text('Tuesday 19 March 2024', font='Any 20', background_color=DARK_HEADER_COLOR)],
+             sg.Text('Thursday 20 June 2024', font='Any 20', background_color=DARK_HEADER_COLOR)],
         ]
 
         col1 = [[self.LEDIndicator('_wait_')], [sg.Text('Waiting')]]
