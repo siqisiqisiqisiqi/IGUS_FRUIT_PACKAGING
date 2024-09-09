@@ -19,7 +19,8 @@ class IgusDriverEncoder():
         if abs(y) > 250:
             y = np.sign(y) * 250
             print("y exceed the range!!!")
-        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 500 CRIEND"
+        # message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 500 CRIEND"
+        message = f"CRISTART 1234 CMD Move Cart {x} {y} {z} 0 0 0 0 0 0 200 CRIEND"
         encoded = message.encode('utf-8')
         move_array = bytearray(encoded)
         return message

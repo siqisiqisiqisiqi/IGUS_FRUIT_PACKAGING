@@ -146,6 +146,7 @@ def main():
     # position2 = [-120, 95, 150]
     position2 = [0, 0, 150]
 
+    # position3 = [114, 125, 100]
     position3 = [0, 0, 300]
     # position4 = [0, 0, 300]
 
