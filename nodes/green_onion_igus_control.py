@@ -13,7 +13,7 @@ import numpy as np
 from numpy.linalg import norm
 from std_msgs.msg import String
 
-from green_onion_perception.msg import Keypoints, Pose
+from green_onion_perception.msg import Keypoints
 from src.igus_driver2 import IgusDriverEncoder
 from igus_fruit_packaging.msg import RobotFeedback
 
@@ -36,9 +36,9 @@ class IgusController():
         self.encoder = IgusDriverEncoder()
 
         # Init the transformation between robot frame and world frame
-        self.M = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        self.T = np.array([[-70], [53], [-30]])
-        self.z_offset = 27
+        self.M = np.array([[0, 1, 0], [1, 0, 0], [0, 0, -1]])
+        self.T = np.array([[54], [70], [0]])
+        self.z_offset = 100
 
         # system home in millimeter
         self.home = np.array([0, 0, 250])
@@ -50,10 +50,19 @@ class IgusController():
         self.gripper_flag = False
 
     def get_kpts_data(self, data):
-        self.grasp_points = None
-        self.num = None
-        # TODO: figure out how to get the grasp pose from the data
-        pass
+        grasp_points = []
+        grasp_yaw = []
+        try:
+            for pose in data.grap_pose:
+                grasp_point = [pose.x, pose.y, pose.z]
+                grasp_points.append(grasp_point)
+                grasp_yaw.append(pose.yaw)
+            # change the unit from meter to millimeter
+            self.grasp_points = np.array(grasp_points) * 1e3
+            self.grasp_yaw = np.array(grasp_yaw)
+            self.num = data.num
+        except:
+            rospy.loginfo("Can't detect the green onion")
 
     def get_robot_data(self, data):
         self.actual_pos = [data.x, data.y, data.z]
@@ -66,7 +75,7 @@ class IgusController():
     def data_coordinate_transformation(self):
         target_list = []
         for i in range(self.num):
-            grasp_point = self.grasp_points[i]
+            grasp_point = self.grasp_points[i].reshape(3, 1)
             target = self.M @ grasp_point + self.T
             target[2, 0] = target[2, 0] + self.z_offset
             target_list.append(target.squeeze())
@@ -107,9 +116,10 @@ class IgusController():
             [target[0], target[1], target[2] + 50])
         self.robot_move(target_offset)
         self.gripper_open()
-        target[2] = target[2] - 10
+        target[2] = target[2] - 7
         self.robot_move(target)
         self.gripper_close()
+        rospy.sleep(0.5)
         self.robot_move(self.home)
         self.robot_move(np.array([-190, -80, 140]))
         self.gripper_half_open()
@@ -127,8 +137,12 @@ class IgusController():
 
         while not rospy.is_shutdown():
             target_array = self.data_coordinate_transformation()
+            rospy.loginfo(f"The target array is {target_array}.")
+
             for target in target_array:
                 self.pick_and_place(target)
+            break
+
             self.rate.sleep()
 
 
